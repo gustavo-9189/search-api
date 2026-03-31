@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: search-api
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${DB_URL:jdbc:oracle:thin:@localhost:1521/FREEPDB1}
+    username: ${DB_USERNAME:searchapi}
+    password: ${DB_PASSWORD:searchapi}
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.OracleDialect
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: search-api-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.search_api.domain.model"
+        spring.json.value.default.type: "com.search_api.domain.model.Search"
+
+server:
+  port: 8080
+
+kafka:
+  topics:
+    hotel-availability-searches: hotel_availability_searches
