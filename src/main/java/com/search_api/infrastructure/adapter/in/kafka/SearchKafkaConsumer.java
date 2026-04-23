@@ -1,7 +1,7 @@
 package com.search_api.infrastructure.adapter.in.kafka;
 
 import com.search_api.domain.model.Search;
-import com.search_api.domain.port.out.SearchRepository;
+import com.search_api.domain.port.in.SaveSearchUseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -12,10 +12,10 @@ public class SearchKafkaConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(SearchKafkaConsumer.class);
 
-    private final SearchRepository searchRepository;
+    private final SaveSearchUseCase saveSearchUseCase;
 
-    public SearchKafkaConsumer(SearchRepository searchRepository) {
-        this.searchRepository = searchRepository;
+    public SearchKafkaConsumer(SaveSearchUseCase saveSearchUseCase) {
+        this.saveSearchUseCase = saveSearchUseCase;
     }
 
     /**
@@ -29,7 +29,7 @@ public class SearchKafkaConsumer {
     public void consume(Search search) {
         log.debug("Evento de búsqueda recibido para searchId={}", search.searchId());
         try {
-            searchRepository.save(search);
+            saveSearchUseCase.save(search);
             log.debug("Búsqueda persistida con searchId={}", search.searchId());
         } catch (Exception e) {
             log.error("Error al persistir la búsqueda con searchId={}", search.searchId(), e);

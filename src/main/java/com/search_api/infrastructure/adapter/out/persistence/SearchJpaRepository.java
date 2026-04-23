@@ -6,14 +6,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface SearchJpaRepository extends JpaRepository<SearchEntity, String> {
 
-    @Query("SELECT COUNT(s) FROM SearchEntity s WHERE s.hotelId = :hotelId AND s.checkIn = :checkIn AND s.checkOut = :checkOut AND s.ages = :ages")
-    long countBySearchFields(
+    @Query("SELECT e FROM SearchEntity e WHERE e.hotelId = :hotelId AND e.checkIn = :checkIn AND e.checkOut = :checkOut")
+    List<SearchEntity> findByHotelIdAndCheckInAndCheckOut(
             @Param("hotelId") String hotelId,
             @Param("checkIn") LocalDate checkIn,
-            @Param("checkOut") LocalDate checkOut,
-            @Param("ages") String ages
-    );
+            @Param("checkOut") LocalDate checkOut);
 }

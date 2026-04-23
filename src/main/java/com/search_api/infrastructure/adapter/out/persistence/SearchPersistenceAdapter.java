@@ -1,25 +1,19 @@
 package com.search_api.infrastructure.adapter.out.persistence;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.search_api.domain.model.Search;
 import com.search_api.domain.port.out.SearchRepository;
 import com.search_api.infrastructure.adapter.out.persistence.entity.SearchEntity;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Optional;
 
 @Component
 public class SearchPersistenceAdapter implements SearchRepository {
 
     private final SearchJpaRepository jpaRepository;
-    private final ObjectMapper objectMapper;
 
-    public SearchPersistenceAdapter(SearchJpaRepository jpaRepository, ObjectMapper objectMapper) {
+    public SearchPersistenceAdapter(SearchJpaRepository jpaRepository) {
         this.jpaRepository = jpaRepository;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -29,7 +23,7 @@ public class SearchPersistenceAdapter implements SearchRepository {
                 search.hotelId(),
                 search.checkIn(),
                 search.checkOut(),
-                serializeAges(search.ages())
+                search.ages()
         );
         jpaRepository.save(entity);
     }
@@ -42,12 +36,12 @@ public class SearchPersistenceAdapter implements SearchRepository {
 
     @Override
     public long countBySearchFields(Search search) {
-        return jpaRepository.countBySearchFields(
-                search.hotelId(),
-                search.checkIn(),
-                search.checkOut(),
-                serializeAges(search.ages())
-        );
+        return jpaRepository
+                .findByHotelIdAndCheckInAndCheckOut(
+                        search.hotelId(), search.checkIn(), search.checkOut())
+                .stream()
+                .filter(e -> e.getAges().equals(search.ages()))
+                .count();
     }
 
     private Search toDomain(SearchEntity entity) {
@@ -56,24 +50,8 @@ public class SearchPersistenceAdapter implements SearchRepository {
                 entity.getHotelId(),
                 entity.getCheckIn(),
                 entity.getCheckOut(),
-                deserializeAges(entity.getAges())
+                entity.getAges()
         );
-    }
-
-    private String serializeAges(List<Integer> ages) {
-        try {
-            return objectMapper.writeValueAsString(ages);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Error al serializar el campo ages", e);
-        }
-    }
-
-    private List<Integer> deserializeAges(String ages) {
-        try {
-            return objectMapper.readValue(ages, new TypeReference<>() {});
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Error al deserializar el campo ages", e);
-        }
     }
 
 }

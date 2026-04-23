@@ -1,11 +1,16 @@
 package com.search_api.infrastructure.adapter.out.persistence.entity;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "SEARCHES")
@@ -24,12 +29,15 @@ public class SearchEntity {
     @Column(name = "CHECK_OUT", nullable = false)
     private LocalDate checkOut;
 
-    @Column(name = "AGES", nullable = false, length = 500)
-    private String ages;
+    @ElementCollection
+    @CollectionTable(name = "SEARCH_AGES", joinColumns = @JoinColumn(name = "SEARCH_ID"))
+    @Column(name = "AGE", nullable = false)
+    @OrderColumn(name = "AGE_ORDER")
+    private List<Integer> ages;
 
     public SearchEntity() {}
 
-    public SearchEntity(String searchId, String hotelId, LocalDate checkIn, LocalDate checkOut, String ages) {
+    public SearchEntity(String searchId, String hotelId, LocalDate checkIn, LocalDate checkOut, List<Integer> ages) {
         this.searchId = searchId;
         this.hotelId = hotelId;
         this.checkIn = checkIn;
@@ -41,6 +49,6 @@ public class SearchEntity {
     public String getHotelId() { return hotelId; }
     public LocalDate getCheckIn() { return checkIn; }
     public LocalDate getCheckOut() { return checkOut; }
-    public String getAges() { return ages; }
+    public List<Integer> getAges() { return ages; }
 
 }

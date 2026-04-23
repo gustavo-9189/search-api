@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.search_api.infrastructure.adapter.in.rest.validation.ValidSearchDates;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +18,7 @@ public record SearchRequest(
         String hotelId,
 
         @NotNull(message = "El checkIn es obligatorio")
+        @FutureOrPresent(message = "El checkIn no puede ser una fecha pasada")
         @JsonFormat(pattern = "dd/MM/yyyy")
         @Schema(type = "string", pattern = "dd/MM/yyyy", example = "01/01/2026")
         LocalDate checkIn,
