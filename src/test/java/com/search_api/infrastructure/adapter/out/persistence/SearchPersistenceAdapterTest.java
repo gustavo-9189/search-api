@@ -1,7 +1,5 @@
 package com.search_api.infrastructure.adapter.out.persistence;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.search_api.domain.model.Search;
 import com.search_api.infrastructure.adapter.out.persistence.entity.SearchEntity;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,10 +25,9 @@ class SearchPersistenceAdapterTest {
     private static final LocalDate CHECK_IN  = LocalDate.of(2023, 12, 29);
     private static final LocalDate CHECK_OUT = LocalDate.of(2023, 12, 31);
     private static final List<Integer> AGES = List.of(30, 29, 1, 3);
-    private static final String AGES_JSON   = "[30,29,1,3]";
 
     private static final Search SEARCH = new Search(SEARCH_ID, HOTEL_ID, CHECK_IN, CHECK_OUT, AGES);
-    private static final SearchEntity ENTITY = new SearchEntity(SEARCH_ID, HOTEL_ID, CHECK_IN, CHECK_OUT, AGES_JSON);
+    private static final SearchEntity ENTITY = new SearchEntity(SEARCH_ID, HOTEL_ID, CHECK_IN, CHECK_OUT, AGES);
 
     @Mock
     private SearchJpaRepository jpaRepository;
@@ -39,8 +36,7 @@ class SearchPersistenceAdapterTest {
 
     @BeforeEach
     void setUp() {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        adapter = new SearchPersistenceAdapter(jpaRepository, objectMapper);
+        adapter = new SearchPersistenceAdapter(jpaRepository);
     }
 
     @Test
@@ -56,7 +52,7 @@ class SearchPersistenceAdapterTest {
                 () -> assertThat(entity.getHotelId()).isEqualTo(HOTEL_ID),
                 () -> assertThat(entity.getCheckIn()).isEqualTo(CHECK_IN),
                 () -> assertThat(entity.getCheckOut()).isEqualTo(CHECK_OUT),
-                () -> assertThat(entity.getAges()).isEqualTo(AGES_JSON)
+                () -> assertThat(entity.getAges()).isEqualTo(AGES)
         );
     }
 
@@ -82,9 +78,23 @@ class SearchPersistenceAdapterTest {
     }
 
     @Test
-    void countBySearchFields_shouldDelegateToRepository() {
-        when(jpaRepository.countBySearchFields(HOTEL_ID, CHECK_IN, CHECK_OUT, AGES_JSON)).thenReturn(7L);
+    void countBySearchFields_shouldCountOnlyMatchingAges() {
+        SearchEntity sameAges    = new SearchEntity("id-1", HOTEL_ID, CHECK_IN, CHECK_OUT, List.of(30, 29, 1, 3));
+        SearchEntity sameAges2   = new SearchEntity("id-2", HOTEL_ID, CHECK_IN, CHECK_OUT, List.of(30, 29, 1, 3));
+        SearchEntity differentOrder = new SearchEntity("id-3", HOTEL_ID, CHECK_IN, CHECK_OUT, List.of(3, 1, 29, 30));
+        SearchEntity differentAges  = new SearchEntity("id-4", HOTEL_ID, CHECK_IN, CHECK_OUT, List.of(25));
 
-        assertThat(adapter.countBySearchFields(SEARCH)).isEqualTo(7L);
+        when(jpaRepository.findByHotelIdAndCheckInAndCheckOut(HOTEL_ID, CHECK_IN, CHECK_OUT))
+                .thenReturn(List.of(sameAges, sameAges2, differentOrder, differentAges));
+
+        assertThat(adapter.countBySearchFields(SEARCH)).isEqualTo(2L);
+    }
+
+    @Test
+    void countBySearchFields_shouldReturnZero_whenNoMatch() {
+        when(jpaRepository.findByHotelIdAndCheckInAndCheckOut(HOTEL_ID, CHECK_IN, CHECK_OUT))
+                .thenReturn(List.of());
+
+        assertThat(adapter.countBySearchFields(SEARCH)).isZero();
     }
 }

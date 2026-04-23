@@ -53,7 +53,7 @@ class SearchKafkaProducerTest {
         future.completeExceptionally(new RuntimeException("Error de Kafka"));
         when(kafkaTemplate.send(any(), any(), any())).thenReturn(future);
 
-        // Should not throw — failure is logged, not propagated
+        // No debe lanzar excepción — el fallo se registra en log, no se propaga
         producer.publish(SEARCH);
 
         verify(kafkaTemplate).send(TOPIC, SEARCH.searchId(), SEARCH);

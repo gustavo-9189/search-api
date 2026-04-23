@@ -1,7 +1,7 @@
 package com.search_api.infrastructure.adapter.in.kafka;
 
 import com.search_api.domain.model.Search;
-import com.search_api.domain.port.out.SearchRepository;
+import com.search_api.domain.port.in.SaveSearchUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,28 +25,28 @@ class SearchKafkaConsumerTest {
     );
 
     @Mock
-    private SearchRepository searchRepository;
+    private SaveSearchUseCase saveSearchUseCase;
 
     private SearchKafkaConsumer consumer;
 
     @BeforeEach
     void setUp() {
-        consumer = new SearchKafkaConsumer(searchRepository);
+        consumer = new SearchKafkaConsumer(saveSearchUseCase);
     }
 
     @Test
     void consume_shouldSaveSearch() {
         consumer.consume(SEARCH);
 
-        verify(searchRepository).save(SEARCH);
+        verify(saveSearchUseCase).save(SEARCH);
     }
 
     @Test
     void consume_shouldRethrowExceptionOnSaveFailure() {
-        doThrow(new RuntimeException("Error de base de datos")).when(searchRepository).save(SEARCH);
+        doThrow(new RuntimeException("Error de base de datos")).when(saveSearchUseCase).save(SEARCH);
 
         assertThrows(RuntimeException.class, () -> consumer.consume(SEARCH));
-        verify(searchRepository).save(SEARCH);
+        verify(saveSearchUseCase).save(SEARCH);
     }
 
 }

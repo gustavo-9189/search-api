@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -27,23 +28,29 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(GlobalExceptionHandler.class)
 class SearchControllerTest {
 
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final LocalDate CHECK_IN  = LocalDate.now().plusDays(10);
+    private static final LocalDate CHECK_OUT = LocalDate.now().plusDays(15);
+    private static final String CHECK_IN_STR  = CHECK_IN.format(FMT);
+    private static final String CHECK_OUT_STR = CHECK_OUT.format(FMT);
+
     private static final String SEARCH_ID = "test-id";
     private static final String HOTEL_ID  = "1234aBc";
     private static final Search SEARCH = new Search(
             SEARCH_ID, HOTEL_ID,
-            LocalDate.of(2023, 12, 29),
-            LocalDate.of(2023, 12, 31),
+            CHECK_IN,
+            CHECK_OUT,
             List.of(30, 29, 1, 3)
     );
 
     private static final String VALID_REQUEST = """
             {
               "hotelId": "1234aBc",
-              "checkIn": "29/12/2023",
-              "checkOut": "31/12/2023",
+              "checkIn": "%s",
+              "checkOut": "%s",
               "ages": [30, 29, 1, 3]
             }
-            """;
+            """.formatted(CHECK_IN_STR, CHECK_OUT_STR);
 
     @Autowired
     private MockMvc mockMvc;
@@ -70,8 +77,8 @@ class SearchControllerTest {
         mockMvc.perform(post("/search")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"hotelId": "", "checkIn": "29/12/2023", "checkOut": "31/12/2023", "ages": [30]}
-                                """))
+                                {"hotelId": "", "checkIn": "%s", "checkOut": "%s", "ages": [30]}
+                                """.formatted(CHECK_IN_STR, CHECK_OUT_STR)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -80,8 +87,19 @@ class SearchControllerTest {
         mockMvc.perform(post("/search")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"hotelId": "hotel1", "checkOut": "31/12/2023", "ages": [30]}
-                                """))
+                                {"hotelId": "hotel1", "checkOut": "%s", "ages": [30]}
+                                """.formatted(CHECK_OUT_STR)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void postSearch_shouldReturn400_whenCheckInIsInPast() throws Exception {
+        String pastDate = LocalDate.now().minusDays(1).format(FMT);
+        mockMvc.perform(post("/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"hotelId": "hotel1", "checkIn": "%s", "checkOut": "%s", "ages": [30]}
+                                """.formatted(pastDate, CHECK_OUT_STR)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -90,8 +108,8 @@ class SearchControllerTest {
         mockMvc.perform(post("/search")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"hotelId": "hotel1", "checkIn": "31/12/2023", "checkOut": "29/12/2023", "ages": [30]}
-                                """))
+                                {"hotelId": "hotel1", "checkIn": "%s", "checkOut": "%s", "ages": [30]}
+                                """.formatted(CHECK_OUT_STR, CHECK_IN_STR)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -100,8 +118,8 @@ class SearchControllerTest {
         mockMvc.perform(post("/search")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"hotelId": "hotel1", "checkIn": "29/12/2023", "checkOut": "31/12/2023", "ages": []}
-                                """))
+                                {"hotelId": "hotel1", "checkIn": "%s", "checkOut": "%s", "ages": []}
+                                """.formatted(CHECK_IN_STR, CHECK_OUT_STR)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -115,8 +133,8 @@ class SearchControllerTest {
                         jsonPath("$.searchId").value(SEARCH_ID),
                         jsonPath("$.count").value(100),
                         jsonPath("$.search.hotelId").value(HOTEL_ID),
-                        jsonPath("$.search.checkIn").value("29/12/2023"),
-                        jsonPath("$.search.checkOut").value("31/12/2023")
+                        jsonPath("$.search.checkIn").value(CHECK_IN_STR),
+                        jsonPath("$.search.checkOut").value(CHECK_OUT_STR)
                 );
     }
 
